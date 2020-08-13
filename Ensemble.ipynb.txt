@@ -1,0 +1,1396 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 74,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from IPython.display import display\n",
+    "from numpy.random import RandomState\n",
+    "from sklearn.linear_model import LogisticRegression, LogisticRegressionCV\n",
+    "from sklearn.metrics import accuracy_score, confusion_matrix, make_scorer, precision_recall_fscore_support, roc_auc_score\n",
+    "from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split\n",
+    "from sklearn.pipeline import Pipeline\n",
+    "from sklearn.preprocessing import RobustScaler, StandardScaler\n",
+    "from sklearn.model_selection import StratifiedKFold\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from IPython.display import display\n",
+    "from numpy.random import RandomState\n",
+    "from sklearn.linear_model import LogisticRegression, LogisticRegressionCV\n",
+    "from sklearn.metrics import accuracy_score, confusion_matrix, make_scorer, precision_recall_fscore_support, roc_auc_score\n",
+    "from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split\n",
+    "from sklearn.pipeline import Pipeline\n",
+    "from sklearn.preprocessing import RobustScaler, StandardScaler\n",
+    "from sklearn.preprocessing import MinMaxScaler\n",
+    "import warnings\n",
+    "warnings.filterwarnings(\"ignore\", category=FutureWarning)\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "import sklearn.metrics as metrics\n",
+    "from collections import Counter\n",
+    "from matplotlib import pyplot as plt\n",
+    "from sklearn.ensemble import RandomForestClassifier"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# PREPROCESSING"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 75,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rs = RandomState(121)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 76,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = pd.read_csv(\"Dataset.txt\", header=None, delimiter=r\"\\s+\",)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 77,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X.columns = [\n",
+    "    \"Age\", \"WorkClass\", \"fnlwgt\", \"Education\", \"EducationNum\",\n",
+    "    \"MaritalStatus\", \"Occupation\", \"Relationship\", \"Race\", \"Gender\",\n",
+    "    \"CapitalGain\", \"CapitalLoss\", \"HoursPerWeek\", \"NativeCountry\", \"Income\"\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 78,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "True"
+      ]
+     },
+     "execution_count": 78,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X.isnull().values.any()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 79,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "   Age  WorkClass  fnlwgt     Education  EducationNum       MaritalStatus  \\\n",
+      "0   25    Private  226802          11th             7       Never-married   \n",
+      "1   38    Private   89814       HS-grad             9  Married-civ-spouse   \n",
+      "2   28  Local-gov  336951    Assoc-acdm            12  Married-civ-spouse   \n",
+      "3   44    Private  160323  Some-college            10  Married-civ-spouse   \n",
+      "4   18          ?  103497  Some-college            10       Never-married   \n",
+      "\n",
+      "          Occupation Relationship   Race  Gender  CapitalGain  CapitalLoss  \\\n",
+      "0  Machine-op-inspct    Own-child  Black    Male          0.0          0.0   \n",
+      "1    Farming-fishing      Husband  White    Male          0.0          0.0   \n",
+      "2    Protective-serv      Husband  White    Male          0.0          0.0   \n",
+      "3  Machine-op-inspct      Husband  Black    Male       7688.0          0.0   \n",
+      "4                  ?    Own-child  White  Female          0.0          0.0   \n",
+      "\n",
+      "   HoursPerWeek  NativeCountry Income  \n",
+      "0          40.0  United-States  <=50K  \n",
+      "1          50.0  United-States  <=50K  \n",
+      "2          40.0  United-States   >50K  \n",
+      "3          40.0  United-States   >50K  \n",
+      "4          30.0  United-States  <=50K  \n"
+     ]
+    }
+   ],
+   "source": [
+    "print(X.head())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 80,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y = X[\"Income\"]\n",
+    "X.drop(\"Income\", axis=1, inplace=True,)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 81,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X.Age = X.Age.astype(float)\n",
+    "X.fnlwgt = X.fnlwgt.astype(float)\n",
+    "X.EducationNum = X.EducationNum.astype(float)\n",
+    "X.HoursPerWeek = X.HoursPerWeek.astype(float)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 82,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(8530,)"
+      ]
+     },
+     "execution_count": 82,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "y.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 83,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(8530, 14)"
+      ]
+     },
+     "execution_count": 83,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 84,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = X.replace('?', np.NaN)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 85,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Train</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>WorkClass</th>\n",
+       "      <td>515</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>MaritalStatus</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Occupation</th>\n",
+       "      <td>516</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Relationship</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Race</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Gender</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>CapitalGain</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>CapitalLoss</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>HoursPerWeek</th>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>NativeCountry</th>\n",
+       "      <td>138</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "               Train\n",
+       "WorkClass        515\n",
+       "MaritalStatus      1\n",
+       "Occupation       516\n",
+       "Relationship       1\n",
+       "Race               1\n",
+       "Gender             1\n",
+       "CapitalGain        1\n",
+       "CapitalLoss        1\n",
+       "HoursPerWeek       1\n",
+       "NativeCountry    138"
+      ]
+     },
+     "execution_count": 85,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "NAs = pd.concat([X.isnull().sum()], axis=1, keys=['Train'])\n",
+    "NAs[NAs.sum(axis=1) > 0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 86,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "num_attributes = X.select_dtypes(include='float64')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 87,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for i in num_attributes:\n",
+    "    X[i] = X[i].fillna(X[i].mean())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 88,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cat_attributes = X.select_dtypes(include=['object'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 89,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = X.drop('EducationNum', axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 90,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for i in cat_attributes:\n",
+    "    X[i] = X[i].fillna(X[i].mode()[0])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 91,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y = y.fillna(y.mode()[0])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 92,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for col in X.dtypes[X.dtypes == 'object'].index:\n",
+    "    for_dummy = X.pop(col)\n",
+    "    X = pd.concat([X, pd.get_dummies(for_dummy, prefix=col)], axis=1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 93,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0       <=50K\n",
+       "1       <=50K\n",
+       "2        >50K\n",
+       "3        >50K\n",
+       "4       <=50K\n",
+       "        ...  \n",
+       "8525    <=50K\n",
+       "8526     >50K\n",
+       "8527    <=50K\n",
+       "8528    <=50K\n",
+       "8529    <=50K\n",
+       "Name: Income, Length: 8530, dtype: object"
+      ]
+     },
+     "execution_count": 93,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "y"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 94,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x_train,x_test,y_train,y_test = train_test_split(X,y,test_size=0.2,random_state= 40)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 95,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "kfold = StratifiedKFold(n_splits = 3 , random_state=40)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### DECISION TREE "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 96,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,\n",
+       "                       max_features=None, max_leaf_nodes=None,\n",
+       "                       min_impurity_decrease=0.0, min_impurity_split=None,\n",
+       "                       min_samples_leaf=1, min_samples_split=2,\n",
+       "                       min_weight_fraction_leaf=0.0, presort=False,\n",
+       "                       random_state=None, splitter='best')"
+      ]
+     },
+     "execution_count": 96,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "tree = DecisionTreeClassifier()\n",
+    "model_tree = tree.fit(x_train,y_train)\n",
+    "model_tree"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 97,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.metrics import classification_report, confusion_matrix, accuracy_score"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 98,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of Desicion Tree is  0.7966002344665886\n"
+     ]
+    }
+   ],
+   "source": [
+    "model_tree = tree.fit(x_train,y_train)\n",
+    "pred_tree = tree.predict(x_test)\n",
+    "a1 = accuracy_score(y_test,pred_tree)\n",
+    "print(\"The Accuracy of Desicion Tree is \", a1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 99,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.806212600952889"
+      ]
+     },
+     "execution_count": 99,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_tree,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### RANDOM FOREST"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 100,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of Random Forest is  0.8335287221570926\n"
+     ]
+    }
+   ],
+   "source": [
+    "rf = RandomForestClassifier()\n",
+    "model_rf = rf.fit(x_train,y_train)\n",
+    "pred_rf = rf.predict(x_test)\n",
+    "a2 = accuracy_score(y_test, pred_rf)\n",
+    "print(\"The Accuracy of Random Forest is \", a2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 101,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8371636787019963"
+      ]
+     },
+     "execution_count": 101,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_rf,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### LOGISTIC REGRESSION"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 102,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of logistic regression is  0.8001172332942555\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.linear_model import LogisticRegression\n",
+    "lg = LogisticRegression()\n",
+    "\n",
+    "model_lg = lg.fit(x_train,y_train)\n",
+    "pred_lg = lg.predict(x_test)\n",
+    "a3 = accuracy_score(y_test, pred_lg)\n",
+    "print(\"The Accuracy of logistic regression is \", a3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 103,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8026968389567379"
+      ]
+     },
+     "execution_count": 103,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_lg,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### KNN"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 104,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.neighbors import KNeighborsClassifier \n",
+    "knn = KNeighborsClassifier()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 105,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of KNN is  0.764947245017585\n"
+     ]
+    }
+   ],
+   "source": [
+    "model_knn =knn.fit(x_train,y_train) \n",
+    "pred_knn = knn.predict(x_test)\n",
+    "a4 = accuracy_score(y_test, pred_knn)\n",
+    "print(\"The Accuracy of KNN is \", a4)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 106,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.7747952568679638"
+      ]
+     },
+     "execution_count": 106,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_knn,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### RANDOM FOREST BEST PARAMETERS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 107,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rf_param = {\n",
+    "    \"n_estimators\": [25,50,100],\n",
+    "    \"criterion\" : [\"gini\"],\n",
+    "    \"max_depth\" : [3,4,5,6],\n",
+    "    \"max_features\" : [\"auto\",\"sqrt\",\"log2\"],\n",
+    "    \"random_state\" : [123]\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 108,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#GridSearchCV(rf, rf_param, cv = kfold)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 109,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "grid =GridSearchCV(rf, rf_param, cv = kfold)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 110,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'criterion': 'gini',\n",
+       " 'max_depth': 6,\n",
+       " 'max_features': 'auto',\n",
+       " 'n_estimators': 50,\n",
+       " 'random_state': 123}"
+      ]
+     },
+     "execution_count": 110,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "grid.fit(x_train,y_train).best_params_"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 111,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8382180539273154"
+      ]
+     },
+     "execution_count": 111,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "rf1 = RandomForestClassifier(criterion = 'gini',\n",
+    "    max_depth = 6,\n",
+    "    max_features = 'auto',\n",
+    "    n_estimators = 50,\n",
+    "    random_state = 123)\n",
+    "model_rf1 = rf1.fit(x_train,y_train)\n",
+    "pred_rf1 = rf1.predict(x_test)\n",
+    "accuracy_score(y_test, pred_rf1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 112,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8379832121024364"
+      ]
+     },
+     "execution_count": 112,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_rf1,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### DECISION TREE BEST PARAMETERS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 113,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_param = {\n",
+    "    'criterion':['gini', 'entropy'],\n",
+    "    'splitter': ['best', 'random'],\n",
+    "    'max_depth' : np.arange(1,20),\n",
+    "    'min_samples_leaf' : [1,2,4,5,10]\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 114,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_grid =GridSearchCV(tree, dt_param, cv = kfold)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 115,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "{'criterion': 'gini',\n",
+       " 'max_depth': 8,\n",
+       " 'min_samples_leaf': 1,\n",
+       " 'splitter': 'best'}"
+      ]
+     },
+     "execution_count": 115,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dt_grid.fit(x_train,y_train).best_params_"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 116,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8452520515826495"
+      ]
+     },
+     "execution_count": 116,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "tree2 = DecisionTreeClassifier(criterion= 'gini', \n",
+    "                               max_depth= 8, min_samples_leaf= 4, splitter= 'best')\n",
+    "model_tree2 = tree2.fit(x_train,y_train)\n",
+    "pred_tree2 = tree2.predict(x_test)\n",
+    "accuracy_score(y_test, pred_tree2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 117,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8519333432970647"
+      ]
+     },
+     "execution_count": 117,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_tree2,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 5 FOLD CV SCORES"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 118,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.805978931657051"
+      ]
+     },
+     "execution_count": 118,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#DECISION TREE\n",
+    "cross_val_score(tree,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 119,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8391556001613992"
+      ]
+     },
+     "execution_count": 119,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#RANDOM FOREST\n",
+    "cross_val_score(rf,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 120,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8026968389567379"
+      ]
+     },
+     "execution_count": 120,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#LOGISTIC REGRESSION\n",
+    "cross_val_score(lg,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 121,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.7747952568679638"
+      ]
+     },
+     "execution_count": 121,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#KNN\n",
+    "cross_val_score(knn,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 122,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8515817258568396"
+      ]
+     },
+     "execution_count": 122,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#DECISION TREE BEST PARAMETERS\n",
+    "cross_val_score(tree2,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 123,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8379832121024364"
+      ]
+     },
+     "execution_count": 123,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#RANDOM FOREST  BEST PARAMETERS\n",
+    "cross_val_score(rf1,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### ENSEMBLE VOTING CLASSIFIER"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 124,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import VotingClassifier"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 125,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_vote = VotingClassifier(\n",
+    "    estimators=[('logistic Regression', lg), \n",
+    "                ('random forrest', rf), \n",
+    "                ('knn neighbors', knn),\n",
+    "                (' decision tree', tree)], voting='soft')\n",
+    "model_vote = model_vote.fit(x_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 126,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "vote_pred = model_vote.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 127,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of voting classifier is  0.8270808909730364\n"
+     ]
+    }
+   ],
+   "source": [
+    "a5 =  accuracy_score(y_test, vote_pred)\n",
+    "print(\"The Accuracy of voting classifier is \", a5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 128,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8379832945836562"
+      ]
+     },
+     "execution_count": 128,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_vote,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### RANDOM FOREST Ensemble Bagging "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 129,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import BaggingClassifier"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 130,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bagg = BaggingClassifier(base_estimator=rf1,n_estimators=15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 131,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_bagg =bagg.fit(x_train,y_train) \n",
+    "pred_bagg = bagg.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 132,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of BAAGING is  0.8305978898007034\n"
+     ]
+    }
+   ],
+   "source": [
+    "a6 = accuracy_score(y_test, pred_bagg)\n",
+    "print(\"The Accuracy of BAAGING is \", a6)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 133,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.831770809104475"
+      ]
+     },
+     "execution_count": 133,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_bagg,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### RANDOM FOREST ENSEMBLE ADA BOOST "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 134,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import AdaBoostClassifier"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 135,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Adaboost = AdaBoostClassifier(base_estimator=rf1, n_estimators=15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 136,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_boost =Adaboost.fit(x_train,y_train) \n",
+    "pred_boost = Adaboost.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 137,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of BOOSTING is  0.8563892145369285\n"
+     ]
+    }
+   ],
+   "source": [
+    "a7 = accuracy_score(y_test, pred_boost)\n",
+    "print(\"The Accuracy of BOOSTING is \", a7)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 138,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8609620675468402"
+      ]
+     },
+     "execution_count": 138,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(model_boost,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### DECISION TREE ENSEMBLE BAGGING"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 139,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_bagg = BaggingClassifier(base_estimator=tree2,n_estimators=15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 140,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_model_bagg =dt_bagg.fit(x_train,y_train) \n",
+    "dt_pred_bagg = dt_bagg.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 141,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of BAAGING is  0.8464243845252052\n"
+     ]
+    }
+   ],
+   "source": [
+    "a8 = accuracy_score(y_test, dt_pred_bagg)\n",
+    "print(\"The Accuracy of BAAGING is \", a8)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 142,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8580301901060148"
+      ]
+     },
+     "execution_count": 142,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(dt_model_bagg,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### DECISION TREE ADA BOOST"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 143,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_Adaboost = AdaBoostClassifier(base_estimator=tree2, n_estimators=15)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 144,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dt_model_boost =dt_Adaboost.fit(x_train,y_train) \n",
+    "dt_pred_boost = dt_Adaboost.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 145,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The Accuracy of BOOSTING is  0.8212192262602579\n"
+     ]
+    }
+   ],
+   "source": [
+    "a9 = accuracy_score(y_test, dt_pred_boost)\n",
+    "print(\"The Accuracy of BOOSTING is \", a9)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 146,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8220396747864479"
+      ]
+     },
+     "execution_count": 146,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cross_val_score(dt_model_boost,X,y,scoring= \"accuracy\", cv=kfold).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
